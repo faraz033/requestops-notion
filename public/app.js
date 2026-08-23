@@ -2,6 +2,10 @@ const form = document.getElementById("requestForm");
 const result = document.getElementById("result");
 const submitBtn = document.getElementById("submitBtn");
 
+const trackForm = document.getElementById("trackForm");
+const trackResult = document.getElementById("trackResult");
+const trackBtn = document.getElementById("trackBtn");
+
 
 // =====================================================
 // SUBMIT REQUEST
@@ -12,7 +16,7 @@ form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     submitBtn.disabled = true;
-    submitBtn.textContent = "Submitting...";
+    submitBtn.innerHTML = `<span class="spinner"></span> Submitting...`;
 
     result.className = "result hidden";
 
@@ -67,27 +71,53 @@ form.addEventListener("submit", async (event) => {
         }
 
 
-        result.className = "result success";
+        // Display Success State with Prominent Request ID and Track Button
+        result.className = "result success-box";
 
         result.innerHTML = `
-            <strong>✓ Request submitted successfully</strong>
-            <br><br>
+            <div class="submission-success">
+                <div class="success-icon-badge">✓</div>
 
-            Request ID:
-            <strong>${data.requestId}</strong>
+                <div class="success-details">
+                    <h3>Request Submitted Successfully</h3>
+                    <p>Your event request has been recorded and sent for administrative review.</p>
 
-            <br><br>
+                    <div class="request-id-container">
+                        <span class="id-label">Your Request ID</span>
+                        <code class="id-code">${data.requestId}</code>
+                    </div>
 
-            Your request has been sent for review.
-            <br>
-            Use this Request ID to track your request.
+                    <div class="success-actions">
+                        <button type="button" class="btn-track-action" id="trackNowBtn">
+                            Track this request →
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
 
 
-        // Automatically put the new Request ID
-        // into the tracking input
-        document.getElementById("requestId").value =
-            data.requestId;
+        // Automatically put the new Request ID into the tracking input
+        document.getElementById("requestId").value = data.requestId;
+
+
+        // Add event listener to the "Track this request" button
+        const trackNowBtn = document.getElementById("trackNowBtn");
+
+        if (trackNowBtn) {
+
+            trackNowBtn.addEventListener("click", () => {
+
+                const trackSection = document.getElementById("track");
+
+                trackSection.scrollIntoView({ behavior: "smooth" });
+
+                // Trigger track form submission automatically
+                trackForm.dispatchEvent(new Event("submit"));
+
+            });
+
+        }
 
 
         form.reset();
@@ -95,19 +125,24 @@ form.addEventListener("submit", async (event) => {
 
     } catch (error) {
 
-        result.className = "result error";
+        result.className = "result error-box";
 
         result.innerHTML = `
-            <strong>✕ Request submission failed</strong>
-            <br><br>
-            ${error.message}
+            <div class="submission-error">
+                <div class="error-icon-badge">✕</div>
+                <div>
+                    <strong>Request Submission Failed</strong>
+                    <p>${escapeHtml(error.message)}</p>
+                </div>
+            </div>
         `;
 
+    } finally {
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Event Request";
+
     }
-
-
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Submit Request";
 
 });
 
@@ -116,19 +151,12 @@ form.addEventListener("submit", async (event) => {
 // TRACK REQUEST
 // =====================================================
 
-const trackForm = document.getElementById("trackForm");
-const trackResult = document.getElementById("trackResult");
-const trackBtn = document.getElementById("trackBtn");
-
-
 trackForm.addEventListener("submit", async (event) => {
 
     event.preventDefault();
 
-    const requestId =
-        document.getElementById("requestId")
-        .value
-        .trim();
+    const requestIdInput = document.getElementById("requestId");
+    const requestId = requestIdInput.value.trim();
 
 
     if (!requestId) {
@@ -137,7 +165,7 @@ trackForm.addEventListener("submit", async (event) => {
 
 
     trackBtn.disabled = true;
-    trackBtn.textContent = "Checking...";
+    trackBtn.innerHTML = `<span class="spinner"></span> Checking...`;
 
     trackResult.className = "result hidden";
 
@@ -164,108 +192,152 @@ trackForm.addEventListener("submit", async (event) => {
         const request = data.data;
 
 
-        let statusClass = "pending";
+        // Define status styling and dot badges
+        let statusBadgeClass = "badge-pending";
+        let statusDotClass = "dot-pending";
 
         if (request.status === "Approved") {
-            statusClass = "success";
+            statusBadgeClass = "badge-approved";
+            statusDotClass = "dot-approved";
+        } else if (request.status === "Rejected") {
+            statusBadgeClass = "badge-rejected";
+            statusDotClass = "dot-rejected";
         }
 
-        if (request.status === "Rejected") {
-            statusClass = "error";
-        }
 
-
-        trackResult.className =
-            `result ${statusClass}`;
-
+        trackResult.className = "result tracking-card-wrapper";
 
         trackResult.innerHTML = `
+            <div class="tracking-card">
 
-            <strong>
-                Request Status
-            </strong>
+                <div class="card-status-header">
 
-            <br><br>
+                    <div class="status-left">
+                        <span class="status-badge ${statusBadgeClass}">
+                            <span class="badge-dot ${statusDotClass}"></span>
+                            ${escapeHtml(request.status || "Pending")}
+                        </span>
 
-            <strong>Request ID:</strong>
-            ${request.requestId}
+                        <code class="tracking-id-badge">${escapeHtml(request.requestId)}</code>
+                    </div>
 
-            <br>
+                    <div class="submission-meta">
+                        Submitted: ${formatDateTime(request.createdAt)}
+                    </div>
 
-            <strong>Student:</strong>
-            ${request.studentName}
+                </div>
 
-            <br>
 
-            <strong>Email:</strong>
-            ${request.email}
+                <div class="tracking-grid">
 
-            <br>
+                    <div class="grid-item">
+                        <span class="grid-label">Student Name</span>
+                        <span class="grid-value">${escapeHtml(request.studentName)}</span>
+                    </div>
 
-            <strong>Event:</strong>
-            ${request.eventName}
+                    <div class="grid-item">
+                        <span class="grid-label">Email</span>
+                        <span class="grid-value">${escapeHtml(request.email)}</span>
+                    </div>
 
-            <br>
+                    <div class="grid-item">
+                        <span class="grid-label">Event Name</span>
+                        <span class="grid-value highlight">${escapeHtml(request.eventName)}</span>
+                    </div>
 
-            <strong>Event Date:</strong>
-            ${formatDate(request.eventDate)}
+                    <div class="grid-item">
+                        <span class="grid-label">Event Date</span>
+                        <span class="grid-value">${formatDate(request.eventDate)}</span>
+                    </div>
 
-            <br>
+                    <div class="grid-item full">
+                        <span class="grid-label">Venue</span>
+                        <span class="grid-value">${escapeHtml(request.venue)}</span>
+                    </div>
 
-            <strong>Venue:</strong>
-            ${request.venue}
+                    <div class="grid-item full">
+                        <span class="grid-label">Description</span>
+                        <span class="grid-value description-text">${escapeHtml(request.description)}</span>
+                    </div>
 
-            <br><br>
+                </div>
 
-            <strong>Status:</strong>
-            ${request.status}
 
-            ${
-                request.decisionReason
-                ? `
-                    <br><br>
-                    <strong>Decision:</strong>
-                    ${request.decisionReason}
-                  `
-                : ""
-            }
+                ${
+                    request.decisionReason || request.processedAt
+                    ? `
+                        <div class="decision-panel ${statusBadgeClass}">
+                            <div class="decision-header">
+                                <span class="panel-title">Administrative Decision</span>
+                                ${
+                                    request.processedAt
+                                    ? `<span class="processed-meta">Processed: ${formatDateTime(request.processedAt)}</span>`
+                                    : ""
+                                }
+                            </div>
+                            ${
+                                request.decisionReason
+                                ? `<p class="decision-body">${escapeHtml(request.decisionReason)}</p>`
+                                : ""
+                            }
+                        </div>
+                      `
+                    : request.status === "Pending"
+                    ? `
+                        <div class="decision-panel badge-pending">
+                            <div class="decision-header">
+                                <span class="panel-title">Status Note</span>
+                            </div>
+                            <p class="decision-body">This request is currently under review by administrators in Notion.</p>
+                        </div>
+                      `
+                    : ""
+                }
 
-            ${
-                request.processedAt
-                ? `
-                    <br>
-                    <strong>Processed At:</strong>
-                    ${formatDateTime(request.processedAt)}
-                  `
-                : ""
-            }
-
+            </div>
         `;
 
 
     } catch (error) {
 
-        trackResult.className =
-            "result error";
+        trackResult.className = "result error-box";
 
         trackResult.innerHTML = `
-            <strong>✕ Unable to find request</strong>
-            <br><br>
-            ${error.message}
+            <div class="submission-error">
+                <div class="error-icon-badge">✕</div>
+                <div>
+                    <strong>Unable to find request</strong>
+                    <p>${escapeHtml(error.message)}</p>
+                </div>
+            </div>
         `;
 
+    } finally {
+
+        trackBtn.disabled = false;
+        trackBtn.textContent = "Track Request";
+
     }
-
-
-    trackBtn.disabled = false;
-    trackBtn.textContent = "Track Request";
 
 });
 
 
 // =====================================================
-// DATE FORMATTING
+// UTILITIES
 // =====================================================
+
+function escapeHtml(str) {
+    if (!str) {
+        return "";
+    }
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 
 function formatDate(dateString) {
 
