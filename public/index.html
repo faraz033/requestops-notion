@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RequestOps</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+            <h1>RequestOps</h1>
+            <p>Student Event Request Management System</p>
+        </header>
+
+
+        <main>
+
+            <section class="card">
+
+                <h2>Submit Event Request</h2>
+
+                <form id="requestForm">
+
+                    <div class="form-group">
+                        <label for="studentName">
+                            Student Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="studentName"
+                            placeholder="Enter your name"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="email">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="Enter your email"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="eventName">
+                            Event Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="eventName"
+                            placeholder="e.g. Hackathon"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="eventDate">
+                            Event Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="eventDate"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="venue">
+                            Venue
+                        </label>
+
+                        <input
+                            type="text"
+                            id="venue"
+                            placeholder="e.g. Seminar Hall"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="description">
+                            Description
+                        </label>
+
+                        <textarea
+                            id="description"
+                            rows="5"
+                            placeholder="Describe your event request..."
+                            required
+                        ></textarea>
+                    </div>
+
+
+                    <button type="submit" id="submitBtn">
+                        Submit Request
+                    </button>
+
+                </form>
+
+
+                <div id="result" class="result hidden"></div>
+
+            </section>
+
+
+            <section class="card">
+
+                <h2>How RequestOps Works</h2>
+
+                <div class="steps">
+
+                    <div class="step">
+                        <span>1</span>
+                        <div>
+                            <h3>Submit</h3>
+                            <p>Student submits an event request.</p>
+                        </div>
+                    </div>
+
+
+                    <div class="step">
+                        <span>2</span>
+                        <div>
+                            <h3>Review</h3>
+                            <p>Request is stored in Notion for review.</p>
+                        </div>
+                    </div>
+
+
+                    <div class="step">
+                        <span>3</span>
+                        <div>
+                            <h3>Approve</h3>
+                            <p>Administrator approves or rejects the request.</p>
+                        </div>
+                    </div>
+
+
+                    <div class="step">
+                        <span>4</span>
+                        <div>
+                            <h3>Process</h3>
+                            <p>RequestOps automatically processes approved requests.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+<section class="card">
+
+    <h2>Track Your Request</h2>
+
+    <form id="trackForm">
+
+        <div class="form-group">
+            <label for="requestId">
+                Request ID
+            </label>
+
+            <input
+                type="text"
+                id="requestId"
+                placeholder="e.g. REQ-1787462392492"
+                required
+            >
+        </div>
+
+        <button type="submit" id="trackBtn">
+            Track Request
+        </button>
+
+    </form>
+
+    <div id="trackResult" class="result hidden"></div>
+
+</section>
+        </main>
+
+
+        <footer>
+            <p>RequestOps • Automated Event Request Management</p>
+        </footer>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
