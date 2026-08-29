@@ -11,32 +11,6 @@ const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
-app.get("/test-create", async (req, res) => {
-  try {
-    const page = await createRequest({
-      requestId: "REQ-TEST-" + Date.now(),
-      studentName: "Test Student",
-      email: "farazfarooqui033@gmail.com",
-      eventName: "Test Event",
-      eventDate: "2026-09-01",
-      venue: "Test Hall",
-      description: "This is a test request created directly from code.",
-    });
-    res.json({ success: true, pageId: page.id });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.get("/test-decided", async (req, res) => {
-  try {
-    const results = await getDecidedRequests();
-    res.json({ count: results.length, results });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 async function processDecisions() {
   const requests = await getDecidedRequests();
   console.log(`Found ${requests.length} decided request(s)`);
@@ -69,15 +43,6 @@ async function processDecisions() {
 
   return requests.length;
 }
-
-app.get("/test-process", async (req, res) => {
-  try {
-    const count = await processDecisions();
-    res.json({ processed: count });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 app.post("/api/requests", async (req, res) => {
   try {
@@ -123,6 +88,7 @@ app.post("/api/requests", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to create request." });
   }
 });
+
 cron.schedule("*/2 * * * *", async () => {
   try {
     const count = await processDecisions();
@@ -135,6 +101,7 @@ cron.schedule("*/2 * * * *", async () => {
 });
 console.log("[cron] scheduled to check every 2 minutes");
 
-  const PORT = process.env.PORT || 3000;app.listen(PORT, () => {
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
