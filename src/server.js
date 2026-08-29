@@ -135,7 +135,6 @@ cron.schedule("*/2 * * * *", async () => {
 });
 console.log("[cron] scheduled to check every 2 minutes");
 
-const PORT = 3000;
-app.listen(PORT, () => {
+  const PORT = process.env.PORT || 3000;app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
