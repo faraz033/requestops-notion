@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>RequestOps — Event Permission Request</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-canvas: #F6F4FC;
+    --surface-card: #FFFFFF;
+    --accent-primary: #6C4DF6;
+    --accent-primary-hover: #5A3CE0;
+    --accent-soft: #EDE8FD;
+    --text-heading: #1B1730;
+    --text-body: #5B5770;
+    --text-muted: #9793AC;
+    --success: #2FBF71;
+    --success-soft: #E6F9EF;
+    --warning: #F5A524;
+    --warning-soft: #FEF3E0;
+    --border-subtle: #E7E4F3;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Manrope', -apple-system, sans-serif;
+    background: var(--bg-canvas);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(27, 23, 48, 0.06);
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 8px;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin: 0 0 8px;
+    line-height: 1.2;
+  }
+
+  .subtext {
+    font-size: 14px;
+    color: var(--text-body);
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+
+  .optional-hint { font-weight: 400; opacity: 0.8; }
+
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-heading);
+    background: var(--surface-card);
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  textarea { resize: vertical; }
+
+  button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px 24px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  button:hover { background: var(--accent-primary-hover); }
+  button:disabled { background: var(--accent-soft); color: var(--text-muted); cursor: not-allowed; }
+
+  .footer {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  /* Confirmation state */
+  .confirm { display: none; text-align: center; }
+  .confirm.show { display: block; }
+  .confirm-icon {
+    width: 56px; height: 56px;
+    background: var(--accent-soft);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+    color: var(--accent-primary);
+  }
+  .confirm h2 { font-size: 20px; color: var(--text-heading); margin: 0 0 8px; }
+  .confirm p { font-size: 14px; color: var(--text-body); margin: 0 0 16px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--warning-soft); color: #B26A00;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+
+  .error { color: #EF4444; font-size: 13px; margin-top: 12px; text-align: center; }
+</style>
+</head>
+<body>
+
+  <div class="card" id="formCard">
+    <p class="eyebrow">Event Permission Request</p>
+    <h1>Request permission for your event</h1>
+    <p class="subtext">Fill this in once — you'll get an email the moment it's decided.</p>
+
+    <form id="form">
+      <label>Your name</label>
+      <input name="studentName" required />
+
+      <label>Your email</label>
+      <input name="email" type="email" required />
+
+      <label>Event name <span class="optional-hint">(optional if described below)</span></label>
+      <input name="eventName" placeholder="e.g. Annual Hackathon" />
+
+      <label>Event date <span class="optional-hint">(optional if described below)</span></label>
+      <input name="eventDate" type="date" />
+
+      <label>Venue <span class="optional-hint">(optional if described below)</span></label>
+      <input name="venue" placeholder="e.g. Main Auditorium" />
+
+      <label>Details</label>
+      <textarea name="description" rows="4" required placeholder="Describe your event. If you skipped the fields above, mention the event name, date, and venue here — we'll pick them out automatically."></textarea>
+
+      <button type="submit" id="submitBtn">Submit request</button>
+      <div class="error" id="error"></div>
+    </form>
+
+    <p class="footer">Powered by RequestOps</p>
+  </div>
+
+  <div class="card confirm" id="confirmCard">
+    <div class="confirm-icon">✓</div>
+    <h2>Request submitted</h2>
+    <p id="confirmText"></p>
+    <span class="badge"><span class="badge-dot"></span> Pending</span>
+    <br /><br />
+    <button onclick="resetForm()" style="background: white; color: var(--accent-primary); border: 1.5px solid var(--border-subtle);">Submit another request</button>
+  </div>
+
+<script>
+const formCard = document.getElementById("formCard");
+const confirmCard = document.getElementById("confirmCard");
+const form = document.getElementById("form");
+const errorEl = document.getElementById("error");
+const submitBtn = document.getElementById("submitBtn");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorEl.textContent = "";
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting...";
+
+  const data = Object.fromEntries(new FormData(form));
+
+  try {
+    const res = await fetch("/api/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+
+    if (!res.ok) {
+      errorEl.textContent = json.message || "Something went wrong.";
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit request";
+      return;
+    }
+
+    document.getElementById("confirmText").innerHTML =
+      `We'll email <strong>${data.email}</strong> as soon as a decision is made.<br>Reference: <strong>${json.requestId}</strong>`;
+    formCard.style.display = "none";
+    confirmCard.classList.add("show");
+  } catch (err) {
+    errorEl.textContent = "Network error — please try again.";
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit request";
+  }
+});
+
+function resetForm() {
+  form.reset();
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Submit request";
+  confirmCard.classList.remove("show");
+  formCard.style.display = "block";
+}
+</script>
+</body>
+</html>

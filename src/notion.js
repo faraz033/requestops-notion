@@ -24,7 +24,7 @@ async function createRequest({ requestId, studentName, email, eventName, eventDa
             "Student Name": { rich_text: [{ text: { content: studentName } }] },
             "Email": { email: email },
             "Event Name": { rich_text: [{ text: { content: eventName } }] },
-            "Event Date": { date: { start: eventDate } },
+            "Event Date": eventDate ? { date: { start: eventDate } } : { date: null },           
             "Venue": { rich_text: [{ text: { content: venue } }] },
             "Description": { rich_text: [{ text: { content: description } }] },
             "Status": { select: { name: "Pending" } },

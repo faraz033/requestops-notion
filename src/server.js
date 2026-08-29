@@ -4,19 +4,19 @@ const express = require("express");
 
 const { notion, createRequest, getDecidedRequests, createRunLog, markProcessed, getText } = require("./notion");
 const { sendApprovalEmail, sendRejectionEmail } = require("./email");
+const { looksMessy, extractFieldsFromText } = require("./ai");
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.json({ message: "RequestOps backend is alive" });
-});
+app.use(express.json());
+app.use(express.static("public"));
 
 app.get("/test-create", async (req, res) => {
   try {
     const page = await createRequest({
       requestId: "REQ-TEST-" + Date.now(),
       studentName: "Test Student",
-      email: "test@example.com",
+      email: "farazfarooqui033@gmail.com",
       eventName: "Test Event",
       eventDate: "2026-09-01",
       venue: "Test Hall",
@@ -79,8 +79,50 @@ app.get("/test-process", async (req, res) => {
   }
 });
 
-// Runs processDecisions() automatically on a schedule, with no human
-// visiting a URL. "*/2 * * * *" means "every 2 minutes."
+app.post("/api/requests", async (req, res) => {
+  try {
+    const { studentName, email, description } = req.body;
+    let { eventName, eventDate, venue } = req.body;
+
+    if (!studentName || !email || !description) {
+      return res.status(400).json({ success: false, message: "Name, email, and a description are required." });
+    }
+
+    if (looksMessy({ eventName, eventDate, venue, description })) {
+      console.log("[ai] structured fields missing, attempting extraction...");
+      const extracted = await extractFieldsFromText(description);
+      if (extracted) {
+        eventName = eventName || extracted.eventName;
+        eventDate = eventDate || extracted.eventDate;
+        venue = venue || extracted.venue;
+        console.log("[ai] extracted:", extracted);
+      }
+    }
+
+    const requestId = "REQ-" + Date.now();
+
+    await createRequest({
+      studentName,
+      email,
+      eventName: eventName || "",
+      eventDate: eventDate || null,
+      venue: venue || "",
+      description,
+      requestId,
+    });
+
+    await createRunLog({
+      requestId,
+      status: "Created",
+      outcome: `Request submitted by ${studentName}${eventName ? ` for "${eventName}"` : ""}. Awaiting coordinator decision.`,
+    });
+
+    res.json({ success: true, requestId });
+  } catch (error) {
+    console.error("Error creating request:", error);
+    res.status(500).json({ success: false, message: "Failed to create request." });
+  }
+});
 cron.schedule("*/2 * * * *", async () => {
   try {
     const count = await processDecisions();
@@ -91,8 +133,8 @@ cron.schedule("*/2 * * * *", async () => {
     console.error("[cron] error:", error.message);
   }
 });
-
 console.log("[cron] scheduled to check every 2 minutes");
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
