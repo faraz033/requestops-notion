@@ -2,8 +2,7 @@ require("dotenv").config();
 const cron = require("node-cron");
 const express = require("express");
 
-const { notion, createRequest, getDecidedRequests, createRunLog, markProcessed, getText } = require("./notion");
-const { sendApprovalEmail, sendRejectionEmail } = require("./email");
+const { notion, createRequest, getDecidedRequests, createRunLog, markProcessed, getText, getRequestByRequestId } = require("./notion");const { sendApprovalEmail, sendRejectionEmail } = require("./email");
 const { looksMessy, extractFieldsFromText } = require("./ai");
 
 const app = express();
@@ -88,7 +87,29 @@ app.post("/api/requests", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to create request." });
   }
 });
+app.get("/api/requests/:requestId", async (req, res) => {
+  try {
+    const page = await getRequestByRequestId(req.params.requestId);
 
+    if (!page) {
+      return res.status(404).json({ found: false });
+    }
+
+    res.json({
+      found: true,
+      requestId: getText(page, "Request ID"),
+      studentName: getText(page, "Student Name"),
+      eventName: getText(page, "Event Name"),
+      eventDate: getText(page, "Event Date"),
+      venue: getText(page, "Venue"),
+      status: page.properties["Status"]?.select?.name || "Pending",
+      decisionReason: getText(page, "Decision Reason"),
+    });
+  } catch (error) {
+    console.error("Error looking up request:", error);
+    res.status(500).json({ found: false, error: "Lookup failed." });
+  }
+});
 cron.schedule("*/2 * * * *", async () => {
   try {
     const count = await processDecisions();

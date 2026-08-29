@@ -179,8 +179,9 @@
       <div class="error" id="error"></div>
     </form>
 
-    <p class="footer">Powered by RequestOps</p>
-  </div>
+<p class="footer">
+  <a href="/status.html" style="color: var(--accent-primary); text-decoration: none;">Check an existing request</a>
+</p>  </div>
 
   <div class="card confirm" id="confirmCard">
     <div class="confirm-icon">✓</div>
@@ -188,8 +189,8 @@
     <p id="confirmText"></p>
     <span class="badge"><span class="badge-dot"></span> Pending</span>
     <br /><br />
-    <button onclick="resetForm()" style="background: white; color: var(--accent-primary); border: 1.5px solid var(--border-subtle);">Submit another request</button>
-  </div>
+<button onclick="resetForm()" style="background: white; color: var(--accent-primary); border: 1.5px solid var(--border-subtle);">Submit another request</button>
+<a id="checkStatusLink" href="#" style="display: block; text-align: center; margin-top: 12px; font-size: 13px; color: var(--text-muted);">Check this request's status</a>  </div>
 
 <script>
 const formCard = document.getElementById("formCard");
@@ -223,6 +224,7 @@ form.addEventListener("submit", async (e) => {
 
     document.getElementById("confirmText").innerHTML =
       `We'll email <strong>${data.email}</strong> as soon as a decision is made.<br>Reference: <strong>${json.requestId}</strong>`;
+    document.getElementById("checkStatusLink").href = `/status.html?id=${encodeURIComponent(json.requestId)}`;
     formCard.style.display = "none";
     confirmCard.classList.add("show");
   } catch (err) {

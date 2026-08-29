@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>RequestOps — Check Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-canvas: #F6F4FC;
+    --surface-card: #FFFFFF;
+    --accent-primary: #6C4DF6;
+    --accent-primary-hover: #5A3CE0;
+    --accent-soft: #EDE8FD;
+    --text-heading: #1B1730;
+    --text-body: #5B5770;
+    --text-muted: #9793AC;
+    --success: #2FBF71;
+    --success-soft: #E6F9EF;
+    --warning: #F5A524;
+    --warning-soft: #FEF3E0;
+    --danger: #EF4444;
+    --danger-soft: #FDEAEA;
+    --border-subtle: #E7E4F3;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Manrope', -apple-system, sans-serif;
+    background: var(--bg-canvas);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(27, 23, 48, 0.06);
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 8px;
+  }
+
+  h1 { font-size: 24px; font-weight: 700; color: var(--text-heading); margin: 0 0 20px; }
+
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  button {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px 24px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent-primary-hover); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge.pending { background: var(--warning-soft); color: #B26A00; }
+  .badge.pending .badge-dot { background: var(--warning); }
+  .badge.approved { background: var(--success-soft); color: #1D8A52; }
+  .badge.approved .badge-dot { background: var(--success); }
+  .badge.rejected { background: var(--danger-soft); color: #C0392B; }
+  .badge.rejected .badge-dot { background: var(--danger); }
+
+  .result { margin-top: 24px; display: none; }
+  .result.show { display: block; }
+  .event-name { font-size: 18px; font-weight: 700; color: var(--text-heading); margin: 12px 0 4px; }
+  .event-meta { font-size: 13px; color: var(--text-body); margin: 0 0 12px; }
+
+  .callout {
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .callout.danger { background: var(--danger-soft); color: #7A1F14; }
+  .callout.success { background: var(--success-soft); color: #144A2C; }
+
+  .error { color: var(--danger); font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <p class="eyebrow">Check Status</p>
+    <h1>Look up your request</h1>
+
+    <label>Reference ID</label>
+    <input id="requestIdInput" placeholder="e.g. REQ-1788006193298" />
+    <button id="lookupBtn" onclick="lookup()">Check status</button>
+
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <span class="badge" id="statusBadge"><span class="badge-dot"></span><span id="statusText"></span></span>
+      <p class="event-name" id="eventName"></p>
+      <p class="event-meta" id="eventMeta"></p>
+      <div id="extraCallout"></div>
+    </div>
+  </div>
+
+<script>
+async function lookup() {
+  const input = document.getElementById("requestIdInput");
+  const errorEl = document.getElementById("error");
+  const resultEl = document.getElementById("result");
+  const requestId = input.value.trim();
+
+  errorEl.textContent = "";
+  resultEl.classList.remove("show");
+
+  if (!requestId) {
+    errorEl.textContent = "Enter your reference ID.";
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/requests/${encodeURIComponent(requestId)}`);
+    const data = await res.json();
+
+    if (!data.found) {
+      errorEl.textContent = "No request found with that ID.";
+      return;
+    }
+
+    const badge = document.getElementById("statusBadge");
+    const statusText = document.getElementById("statusText");
+    const status = (data.status || "Pending").toLowerCase();
+
+    badge.className = "badge " + status;
+    statusText.textContent = data.status;
+
+    document.getElementById("eventName").textContent = data.eventName || "(no event name given)";
+    document.getElementById("eventMeta").textContent =
+      [data.eventDate, data.venue].filter(Boolean).join(" · ");
+
+    const extra = document.getElementById("extraCallout");
+    extra.innerHTML = "";
+
+    if (status === "rejected") {
+      extra.innerHTML = `<div class="callout danger"><strong>Reason:</strong> ${data.decisionReason || "No reason given."}</div>`;
+    } else if (status === "approved") {
+      extra.innerHTML = `<div class="callout success">You're confirmed for ${data.eventDate || "the requested date"} at ${data.venue || "the requested venue"}.</div>`;
+    }
+
+    resultEl.classList.add("show");
+  } catch (err) {
+    errorEl.textContent = "Something went wrong — please try again.";
+  }
+}
+
+// If visited as /status.html?id=REQ-xxxx, auto-fill and look up immediately.
+const params = new URLSearchParams(window.location.search);
+const prefillId = params.get("id");
+if (prefillId) {
+  document.getElementById("requestIdInput").value = prefillId;
+  lookup();
+}
+</script>
+</body>
+</html>

@@ -91,4 +91,19 @@ function getText(page, propertyName) {
   if (prop.date) return prop.date?.start || "";
   return "";
 }
-module.exports = { notion, createRequest, getDataSourceId, getDecidedRequests, createRunLog, markProcessed, getText };
+// Finds one request by its Request ID (the title field), for the
+// student-facing status page. Returns null if nothing matches.
+async function getRequestByRequestId(requestId) {
+  const dataSourceId = await getDataSourceId(REQUESTS_DATABASE_ID);
+
+  const response = await notion.dataSources.query({
+    data_source_id: dataSourceId,
+    filter: {
+      property: "Request ID",
+      title: { equals: requestId },
+    },
+  });
+
+  return response.results[0] || null;
+}
+module.exports = { notion, createRequest, getDataSourceId, getDecidedRequests, createRunLog, markProcessed, getText, getRequestByRequestId };
