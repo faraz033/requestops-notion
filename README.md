@@ -25,7 +25,7 @@ Trigger (styled web form, deployed)
         ▼
   Cron job (every 2 min, runs on the deployed server) detects the decision
         │
-        ├─▶ Real Action: email sent via Gmail SMTP
+        ├─▶ Real Action: email sent via Resend (HTTP API)
         └─▶ Run Log: row written by code, real timestamp
 ```
 
@@ -41,11 +41,12 @@ Every piece below has been built, tested, and verified running in production (no
 - ✅ Notion authentication and page creation
 - ✅ AI extraction (Groq) — fills in event name/date/venue from free text only when those fields are left blank; zero AI calls when the form is filled in cleanly
 - ✅ Coordinator decision detection — both Approved and Rejected branches, tested end-to-end
-- ✅ Real email delivery via Gmail SMTP, confirmed landing in a real inbox
+- ✅ Real email delivery via Resend's HTTP API, confirmed landing in a real inbox — switched from Gmail SMTP after discovering Render's free tier blocks outbound SMTP ports (25/465/587) as an anti-abuse measure
 - ✅ Run Log — every row written by code with a real timestamp, never typed by hand
 - ✅ Idempotency — a request is only ever processed once; a failed action retries automatically instead of silently dropping
 - ✅ Fully autonomous — a cron job on the deployed server checks Notion every 2 minutes with zero manual triggers
 - ✅ Deployed on Render, verified working end-to-end from a real submission through to a real email, with the server running independently of any local machine
+- ✅ Status lookup page (`/status.html`) — students can check Pending/Approved/Rejected state by reference ID, linked directly from the post-submit confirmation screen
 - ✅ Test/dev data cleaned out of both Notion databases
 
 ---
@@ -94,7 +95,7 @@ Create an integration at [notion.so/my-integrations](https://notion.so/my-integr
 cp .env.example .env
 ```
 
-Fill in real values — see `.env.example` for the full list (Notion, SMTP, AI).
+Fill in real values — see `.env.example` for the full list (Notion, Resend, AI).
 
 ### 4. Run locally
 
@@ -116,10 +117,11 @@ Push to GitHub, connect the repo on [Render](https://render.com) as a Web Servic
 ## How each piece works
 
 - **`src/notion.js`** — all Notion API calls: creating requests, querying for coordinator decisions, writing Run Log rows, locking a request as processed.
-- **`src/email.js`** — sends the real action (approval/rejection email) via Gmail SMTP through `nodemailer`.
+- **`src/email.js`** — sends the real action (approval/rejection email) via Resend's HTTP API. Originally used Gmail SMTP through `nodemailer`, but Render's free tier blocks outbound SMTP ports, so this was rewritten to use HTTPS instead — the two exported functions (`sendApprovalEmail`, `sendRejectionEmail`) kept the same signatures, so nothing else in the codebase needed to change.
 - **`src/ai.js`** — the load-bearing AI step. `looksMessy()` decides deterministically whether AI is even needed; `extractFieldsFromText()` calls Groq's API and only fires when structured form fields were left blank.
 - **`src/server.js`** — the public form route, the decision processor, and the cron schedule that runs it automatically.
-- **`public/index.html`** — the student-facing form, including a proper confirmation state after submission.
+- **`public/index.html`** — the student-facing form, including a proper confirmation state after submission, with a direct link through to the status page for the request just created.
+- **`public/status.html`** — lets a student check their request's current state (Pending/Approved/Rejected) by reference ID, including the coordinator's rejection reason when applicable.
 
 ---
 
@@ -134,6 +136,7 @@ Push to GitHub, connect the repo on [Render](https://render.com) as a Web Servic
 
 ## Known considerations (not blockers, just honest notes)
 
-- The manual test routes used during development (`/test-create`, `/test-decided`, `/test-process`) are still present in `src/server.js`. They're harmless but unauthenticated — worth removing or gating behind a secret if this ever needs to be more locked-down than a personal project.
-- Render's free tier spins the server down after inactivity, adding a ~30-50 second delay to the first request after idle periods. Fine for personal use; would need a paid tier or a keep-alive ping to avoid entirely.
+- Render's free tier spins the server down after inactivity, adding a ~30-50 second delay to the first request after idle periods. This also means the cron scheduler stops entirely while the server is asleep — a decision made in Notion won't be acted on until something wakes the server back up.
+- Resend's free tier, without a verified custom domain, only delivers to the email address the Resend account itself is signed up with — not to arbitrary addresses typed into the form. Fine for personal testing; would need domain verification to email real, distinct student inboxes.
+- Running the server both locally and on Render at the same time can cause the same decision to be processed twice (two independent cron loops racing to claim the same unprocessed row before either finishes locking it) — occasionally results in a duplicate email. Low-stakes for a personal project; run only one instance at a time to avoid it.
 - No automated test suite — every piece was manually verified end-to-end during development. Future changes should be re-tested manually the same way.
