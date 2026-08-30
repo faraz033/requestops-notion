@@ -1,47 +1,48 @@
-const nodemailer = require("nodemailer");
-
-// Falls back to console logging if SMTP isn't configured -- keeps the
-// system testable even without email set up, but now that we have real
-// credentials, it'll actually send.
-const transporter = process.env.SMTP_USER
-  ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: false, // false because we're using STARTTLS on port 587, not raw SSL
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    })
-  : null;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 async function sendApprovalEmail({ to, studentName, eventName, eventDate, venue }) {
   const subject = `Approved: ${eventName}`;
   const body = `Hi ${studentName}, your request for "${eventName}" on ${eventDate} at ${venue} has been APPROVED.`;
-  return sendOrLog({ to, subject, body });
+  return sendViaResend({ to, subject, body });
 }
 
 async function sendRejectionEmail({ to, studentName, eventName, reason }) {
   const subject = `Not approved: ${eventName}`;
   const body = `Hi ${studentName}, your request for "${eventName}" was not approved. Reason: ${reason || "none given"}.`;
-  return sendOrLog({ to, subject, body });
+  return sendViaResend({ to, subject, body });
 }
 
-async function sendOrLog({ to, subject, body }) {
-  if (!transporter) {
+async function sendViaResend({ to, subject, body }) {
+  if (!RESEND_API_KEY) {
     console.log(`[email:MOCK] to=${to} subject="${subject}"\n${body}\n`);
     return { mocked: true };
   }
 
-  const info = await transporter.sendMail({
-    from: process.env.SMTP_USER,
-    to,
-    subject,
-    text: body,
+  // Resend's own sandbox domain (onboarding@resend.dev) works without any
+  // setup, but without a verified domain it can only deliver to the email
+  // address you signed up with on Resend -- fine for personal testing.
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "RequestOps <onboarding@resend.dev>",
+      to,
+      subject,
+      text: body,
+    }),
   });
 
-  console.log(`[email:SENT] to=${to} subject="${subject}" messageId=${info.messageId}`);
-  return { mocked: false, messageId: info.messageId };
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Resend API failed: ${res.status} ${errText}`);
+  }
+
+  const data = await res.json();
+  console.log(`[email:SENT via Resend] to=${to} subject="${subject}" id=${data.id}`);
+  return { mocked: false, id: data.id };
 }
 
 module.exports = { sendApprovalEmail, sendRejectionEmail };
